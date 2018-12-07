@@ -1,21 +1,20 @@
+import React from "react";
+import PropTypes from "prop-types";
+import queryString from "query-string";
+import { WebView, Linking } from "react-native";
+import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 
-import React from 'react';
-import PropTypes from 'prop-types';
-import queryString from 'query-string';
-import { WebView, Linking } from 'react-native';
-import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
-
-import ErrorOnParams from '../ErrorOnParams';
-import { validateProps } from '../../utils';
+import ErrorOnParams from "../ErrorOnParams";
+import { validateProps } from "../../utils";
 import {
   PG,
   CALLBACK_AVAILABLE_PG,
   PAY_METHOD,
   CURRENCY,
   MARKET_URL
-} from '../../constants';
+} from "../../constants";
 
-const source = require('../../html/payment.html');
+const source = require("../../html/payment.html");
 
 class Payment extends React.Component {
   static propTypes = {
@@ -26,15 +25,15 @@ class Payment extends React.Component {
       currency: PropTypes.oneOf(CURRENCY),
       notice_url: PropTypes.oneOfType([
         PropTypes.string,
-        PropTypes.arrayOf(PropTypes.string),
+        PropTypes.arrayOf(PropTypes.string)
       ]),
       display: PropTypes.shape({
-        card_quota: PropTypes.arrayOf(PropTypes.number),
+        card_quota: PropTypes.arrayOf(PropTypes.number)
       }),
       merchant_uid: PropTypes.string.isRequired,
       amoung: PropTypes.oneOfType([
         PropTypes.string.isRequired,
-        PropTypes.number.isRequired,
+        PropTypes.number.isRequired
       ]),
       buyer_tel: PropTypes.string.isRequired,
       app_scheme: PropTypes.string.isRequired,
@@ -47,24 +46,24 @@ class Payment extends React.Component {
       buyer_postcode: PropTypes.string,
       custom_data: PropTypes.object,
       vbank_due: PropTypes.string,
-      popup: PropTypes.bool,
+      popup: PropTypes.bool
     }).isRequired,
     callback: PropTypes.func.isRequired,
     loading: PropTypes.shape({
       message: PropTypes.string,
-      image: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    }),
+      image: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    })
   };
 
   state = {
-    marketUrl: '',
-    status: 'ready',
+    marketUrl: "",
+    status: "ready"
   };
 
   getRequestContent() {
     let params = this.props.data;
     const merchant_uid =
-      params.merchant_uid || 'merchant_' + new Date().getTime();
+      params.merchant_uid || "merchant_" + new Date().getTime();
     let HTML = `
     <!DOCTYPE html>
     <html>
@@ -74,29 +73,21 @@ class Payment extends React.Component {
       </head>
       <body>
         <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js" ></script>
-        <script type="text/javascript" src="https://service.iamport.kr/js/iamport.payment-1.1.7.js"></script>
+        <script type="text/javascript" src="https://cdn.iamport.kr/js/iamport.payment-1.1.7.js"></script>
         <script type="text/javascript">
           var IMP = window.IMP;
           IMP.init('${this.props.userCode}');
           IMP.request_pay({
             pg : '${params.pg}',
             pay_method : '${params.pay_method}',
-            merchant_uid : '${merchant_uid}',
-            m_redirect_url : '${params.app_scheme}://success',
+            merchant_uid : '${params.merchant_uid}',
             app_scheme : '${params.app_scheme}',
             name : '${params.name}',
             amount : ${params.amount},
             buyer_email : '${params.buyer_email}',
             buyer_name : '${params.buyer_name}',
             buyer_tel : '${params.buyer_tel}',
-            buyer_addr : '${params.buyer_addr}',
-            buyer_postcode : '${params.buyer_postcode}',
-            vbank_due : '${params.vbank_due}',
-            kakaoOpenApp : ${params.pg === 'kakaopay'}
           }, function(rsp){
-           if('${params.pg}' == 'nice'){
-             return;
-           }
            window.postMessage(JSON.stringify(rsp));
          });
         </script>
@@ -108,7 +99,7 @@ class Payment extends React.Component {
 
   onLoad = () => {
     const { status } = this.state;
-    if (status === 'ready') {
+    if (status === "ready") {
       // 포스트 메시지를 한번만 보내도록(무한루프 방지)
       const { userCode, data, loading } = this.props;
 
@@ -116,12 +107,12 @@ class Payment extends React.Component {
         userCode,
         data,
         loading: {
-          message: loading.message || '잠시만 기다려주세요...',
-          image: this.getCustomLoadingImage(),
-        },
+          message: loading.message || "잠시만 기다려주세요...",
+          image: this.getCustomLoadingImage()
+        }
       });
       this.xdm.postMessage(params);
-      this.setState({ status: 'sent' });
+      this.setState({ status: "sent" });
     }
   };
 
@@ -129,21 +120,21 @@ class Payment extends React.Component {
     const { loading } = this.props;
     const { image } = loading;
 
-    if (typeof image === 'number') {
+    if (typeof image === "number") {
       return resolveAssetSource(image).uri;
     }
 
-    if (typeof image === 'string') {
+    if (typeof image === "string") {
       return image;
     }
 
-    return '../img/iamport-logo.png';
+    return "../img/iamport-logo.png";
   }
 
   onError = () => {
     const { marketUrl } = this.state;
-    console.log('onError:', marketUrl);
-    alert('onError:', marketUrl);
+    console.log("onError:", marketUrl);
+    alert("onError:", marketUrl);
     if (marketUrl) {
       Linking.openURL(marketUrl); // 앱 스토어로 이동
     }
@@ -161,24 +152,24 @@ class Payment extends React.Component {
     const { callback } = this.props;
     const response = JSON.parse(e.nativeEvent.data);
 
-    if (typeof callback === 'function') {
+    if (typeof callback === "function") {
       callback(response);
     }
   };
 
   getInjectedJavascript() {
     // 웹뷰 onMessage override 방지 코드
-    const patchPostMessageFunction = function () {
+    const patchPostMessageFunction = function() {
       var originalPostMessage = window.postMessage;
 
-      var patchedPostMessage = function (message, targetOrigin, transfer) {
+      var patchedPostMessage = function(message, targetOrigin, transfer) {
         originalPostMessage(message, targetOrigin, transfer);
       };
 
-      patchedPostMessage.toString = function () {
+      patchedPostMessage.toString = function() {
         return String(Object.hasOwnProperty).replace(
-          'hasOwnProperty',
-          'postMessage'
+          "hasOwnProperty",
+          "postMessage"
         );
       };
 
@@ -190,21 +181,21 @@ class Payment extends React.Component {
 
   onNavigationStateChange = e => {
     const { status } = this.state;
-    if (status === 'sent') {
+    if (status === "sent") {
       const { url, query } = queryString.parseUrl(e.url);
       const { data, callback } = this.props;
       const { pg } = data;
 
       // 웹뷰를 로드하는데 실패하는 경우를 대비해 (필요한 앱이 설치되지 않은 경우 등)
       // app scheme값을 갖고 있는다
-      const splittedScheme = url.split('://');
+      const splittedScheme = url.split("://");
       const scheme = splittedScheme[0];
-      if (scheme !== 'http' && scheme !== 'https' && scheme !== 'about:blank') {
+      if (scheme !== "http" && scheme !== "https" && scheme !== "about:blank") {
         this.setState({
           marketUrl:
-            scheme === 'itmss'
+            scheme === "itmss"
               ? `https://${splittedScheme[1]}`
-              : MARKET_URL[scheme],
+              : MARKET_URL[scheme]
         });
       }
 
@@ -215,18 +206,18 @@ class Payment extends React.Component {
         CALLBACK_AVAILABLE_PG.indexOf(pg) === -1
       ) {
         // in case of not supporting callback
-        if (typeof callback === 'function') {
+        if (typeof callback === "function") {
           callback(query);
         }
 
-        this.setState({ status: 'done' });
+        this.setState({ status: "done" });
       }
     }
   };
 
   isUrlMatchingWithIamportUrl(url) {
-    if (url.includes('https://service.iamport.kr/payments/fail')) return true;
-    if (url.includes('https://service.iamport.kr/payments/success'))
+    if (url.includes("https://service.iamport.kr/payments/fail")) return true;
+    if (url.includes("https://service.iamport.kr/payments/success"))
       return true;
     return false;
   }
@@ -242,7 +233,7 @@ class Payment extends React.Component {
           onLoad={this.onLoad}
           onError={this.onError}
           onMessage={this.onMessage}
-          originWhitelist={['*']} // https://github.com/facebook/react-native/issues/19986
+          originWhitelist={["*"]} // https://github.com/facebook/react-native/issues/19986
           injectedJavaScript={this.getInjectedJavascript()} // https://github.com/facebook/react-native/issues/10865
           onNavigationStateChange={this.onNavigationStateChange}
         />
@@ -254,5 +245,3 @@ class Payment extends React.Component {
 }
 
 export default Payment;
-
-
